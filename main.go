@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/midnightrun/aggregator-pattern/aggregator"
 )
@@ -16,8 +19,20 @@ func main() {
 
 	http.HandleFunc("/notifications", aggregatorHandler)
 
-	fmt.Printf("receiving on http://localhost:8080/notifications\n")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	errs := make(chan error, 2)
+
+	go func() {
+		fmt.Printf("receiving on http://localhost:8080/notifications\n")
+		errs <- http.ListenAndServe(":8080", nil)
+	}()
+
+	go func() {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, syscall.SIGINT)
+		errs <- fmt.Errorf("%s", <-c)
+	}()
+
+	fmt.Printf("terminated service on http://localhost:8080/notifications due to %s\n", <-errs)
 }
 
 func aggregatorHandler(w http.ResponseWriter, r *http.Request) {
