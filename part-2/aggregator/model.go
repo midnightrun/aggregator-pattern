@@ -27,3 +27,5 @@ type AggregationNotification struct {
 	Email         string
 	Notifications Aggregation
 }
+
+type AggregationStore 

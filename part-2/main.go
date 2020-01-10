@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/midnightrun/aggregator-pattern/part-1/aggregator"
+	"github.com/midnightrun/aggregator-pattern/part-2/aggregator"
 )
 
 var aggregationStore map[string]aggregator.Aggregation
