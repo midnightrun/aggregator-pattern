@@ -1,13 +1,22 @@
 package aggregator
 
 import (
+	"log"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/dgraph-io/badger"
 )
 
-func createBadgerStore(t *testing.T) (AggregationStore, func()) {
+func createBadgerStore(t *testing.T) (*badger.DB, func() error) {
+	db, err := badger.Open(badger.DefaultOptions("/tmp/badger"))
+	if err != nil {
+		log.Fatalf("could not open database: %v", err)
+		return nil, nil
+	}
 
+	return db, db.Close
 }
 
 func makeNotification(t *testing.T, email string) *SecurityNotification {
