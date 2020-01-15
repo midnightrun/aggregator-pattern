@@ -4,6 +4,6 @@ Based on [Kevin McDermott's Tutorial](https://bigkevmcd.github.io/patterns/event
 
 ## Todo
 
-[] Base implementation on msgpack
-[] Implement again interface instead of concrete Badger dependency
-[] Deactivate Badgers verbose logging
+[ ] Base implementation on msgpack
+[ ] Implement again interface instead of concrete Badger dependency
+[ ] Deactivate Badgers verbose logging
