@@ -33,13 +33,13 @@ type AggregationNotification struct {
 }
 
 type AggregationStore struct {
-	db badger.DB
+	DB *badger.DB
 }
 
 func (a *AggregationStore) Get(id string) (Aggregation, error) {
 	var sns Aggregation
 
-	err := a.db.View(func(txn *badger.Txn) error {
+	err := a.DB.View(func(txn *badger.Txn) error {
 		var err error
 		sns, err = getOrNil(txn, id)
 		return err
@@ -50,7 +50,11 @@ func (a *AggregationStore) Get(id string) (Aggregation, error) {
 
 func (a *AggregationStore) Save(id string, state Aggregation) error {
 	b, err := marshal(state)
-	return a.db.Update(func(txn *badger.Txn) error {
+	if err != nil {
+		return err
+	}
+
+	return a.DB.Update(func(txn *badger.Txn) error {
 		return txn.Set(keyForId(defaultPrefix, id), b)
 	})
 }

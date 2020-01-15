@@ -9,14 +9,14 @@ import (
 	"github.com/dgraph-io/badger"
 )
 
-func createBadgerStore(t *testing.T) (*badger.DB, func() error) {
+func createStore(t *testing.T) (*AggregationStore, func() error) {
 	db, err := badger.Open(badger.DefaultOptions("/tmp/badger"))
 	if err != nil {
 		log.Fatalf("could not open database: %v", err)
 		return nil, nil
 	}
-
-	return db, db.Close
+	store := AggregationStore{DB: db}
+	return &store, db.Close
 }
 
 func makeNotification(t *testing.T, email string) *SecurityNotification {
@@ -82,7 +82,7 @@ func TestAggregationPublishesOnHighPriorityEvent(t *testing.T) {
 }
 
 func TestGetWithUnkownID(t *testing.T) {
-	store, cleanup := createBadgerStore(t)
+	store, cleanup := createStore(t)
 	defer cleanup()
 
 	a, err := store.Get("testEmail")
@@ -94,7 +94,7 @@ func TestGetWithUnkownID(t *testing.T) {
 }
 
 func TestSave(t *testing.T) {
-	store, cleanup := createBadgerStore(t)
+	store, cleanup := createStore(t)
 	defer cleanup()
 
 	notification := Aggregation{makeNotification(t, "testEmail")}
@@ -102,7 +102,7 @@ func TestSave(t *testing.T) {
 	err := store.Save("testEmail", notification)
 	fatalIfError(t, err)
 
-	loaded, err := store.Get(testEmail)
+	loaded, err := store.Get("testEmail")
 	fatalIfError(t, err)
 
 	if !reflect.DeepEqual(notification, loaded) {

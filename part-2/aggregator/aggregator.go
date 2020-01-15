@@ -1,6 +1,7 @@
 package aggregator
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/dgraph-io/badger"
@@ -21,10 +22,6 @@ func Strategy(evt *SecurityNotification, s Aggregation) (*AggregationNotificatio
 	return nil, s
 }
 
-func keyForId(prefix string, id string) []byte {
-	return []byte(fmt.Sprintf("%s%s", prefix, id))
-}
-
 func getOrNil(txn *badger.Txn, id string) (Aggregation, error) {
 	item, err := txn.Get(keyForId(defaultPrefix, id))
 	if err == badger.ErrKeyNotFound {
@@ -38,4 +35,18 @@ func getOrNil(txn *badger.Txn, id string) (Aggregation, error) {
 	})
 
 	return sns, err
+}
+
+func keyForId(prefix string, id string) []byte {
+	return []byte(fmt.Sprintf("%s%s", prefix, id))
+}
+
+func marshal(state Aggregation) ([]byte, error) {
+	return json.Marshal(state)
+}
+
+func unmarshal(input []byte) (Aggregation, error) {
+	var agg Aggregation
+	err := json.Unmarshal(input, &agg)
+	return agg, err
 }
