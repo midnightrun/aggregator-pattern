@@ -9,13 +9,18 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/dgraph-io/badger"
 	"github.com/midnightrun/aggregator-pattern/part-2/aggregator"
 )
 
-var aggregationStore map[string]aggregator.Aggregation
-
 func main() {
-	aggregationStore = make(map[string]aggregator.Aggregation, 0)
+	db, err := badger.Open(badger.DefaultOptions("./tmp"))
+	if err != nil {
+		fmt.Printf("terminated service on http://localhost:8080/notifications due to %s\n", err)
+	}
+	defer db.Close()
+
+	store := aggregator.NewStore(db)
 
 	http.HandleFunc("/notifications", aggregatorHandler)
 
@@ -49,7 +54,7 @@ func aggregatorHandler(w http.ResponseWriter, r *http.Request) {
 	correlationID := sn.Email
 	log.Printf("processing %s event for %s\n", sn.Priority, correlationID)
 
-	existingState, ok := aggregationStore[correlationID]
+	existingState, ok := AggregationStore[correlationID]
 	if !ok {
 		existingState = make(aggregator.Aggregation, 0)
 	}

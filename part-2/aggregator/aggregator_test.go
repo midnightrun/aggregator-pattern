@@ -10,13 +10,23 @@ import (
 )
 
 func createStore(t *testing.T) (*AggregationStore, func() error) {
-	db, err := badger.Open(badger.DefaultOptions("/tmp/badger"))
+	db, err := badger.Open(badger.DefaultOptions("./tmp"))
 	if err != nil {
 		log.Fatalf("could not open database: %v", err)
 		return nil, nil
 	}
-	store := AggregationStore{DB: db}
+	store := NewStore(db)
 	return &store, db.Close
+}
+
+func dropAll() {
+	db, err := badger.OpenManaged(badger.DefaultOptions("./tmp"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	db.DropAll()
 }
 
 func makeNotification(t *testing.T, email string) *SecurityNotification {
