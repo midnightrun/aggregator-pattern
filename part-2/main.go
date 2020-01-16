@@ -13,14 +13,17 @@ import (
 	"github.com/midnightrun/aggregator-pattern/part-2/aggregator"
 )
 
+var store aggregator.AggregationStore
+
 func main() {
 	db, err := badger.Open(badger.DefaultOptions("./tmp"))
+	defer db.Close()
+
 	if err != nil {
 		fmt.Printf("terminated service on http://localhost:8080/notifications due to %s\n", err)
 	}
-	defer db.Close()
 
-	store := aggregator.NewStore(db)
+	store = aggregator.NewStore(db)
 
 	http.HandleFunc("/notifications", aggregatorHandler)
 
@@ -54,17 +57,22 @@ func aggregatorHandler(w http.ResponseWriter, r *http.Request) {
 	correlationID := sn.Email
 	log.Printf("processing %s event for %s\n", sn.Priority, correlationID)
 
-	existingState, ok := AggregationStore[correlationID]
-	if !ok {
+	existingState, err := store.Get(sn.Email)
+	if err != nil {
 		existingState = make(aggregator.Aggregation, 0)
 	}
 
 	var n *aggregator.AggregationNotification
 
-	n, aggregationStore[correlationID] = aggregator.Strategy(&sn, existingState)
+	n, s := aggregator.Strategy(&sn, existingState)
 	if n != nil {
 		log.Printf("new event emitted for user %s\n", n.Email)
 		return
+	}
+
+	err = store.Save(sn.Email, s)
+	if err != nil {
+		log.Printf("failed save operation: %v\n", err)
 	}
 
 	log.Println("event processed - no event emitted")
