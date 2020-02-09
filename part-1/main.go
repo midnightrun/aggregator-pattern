@@ -12,11 +12,9 @@ import (
 	"github.com/midnightrun/aggregator-pattern/part-1/aggregator"
 )
 
-var aggregationStore map[string]aggregator.Aggregation
+var aggregationStore = make(map[string]aggregator.Aggregation, 0)
 
 func main() {
-	aggregationStore = make(map[string]aggregator.Aggregation, 0)
-
 	http.HandleFunc("/notifications", aggregatorHandler)
 
 	errs := make(chan error, 2)

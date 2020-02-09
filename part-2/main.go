@@ -17,11 +17,11 @@ var store aggregator.AggregationStore
 
 func main() {
 	db, err := badger.Open(badger.DefaultOptions("./tmp"))
-	defer db.Close()
-
 	if err != nil {
 		fmt.Printf("terminated service on http://localhost:8080/notifications due to %s\n", err)
 	}
+
+	defer db.Close()
 
 	store = aggregator.NewStore(db)
 
