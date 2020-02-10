@@ -19,6 +19,7 @@ func main() {
 	db, err := badger.Open(badger.DefaultOptions("./tmp"))
 	if err != nil {
 		fmt.Printf("terminated service on http://localhost:8080/notifications due to %s\n", err)
+		return
 	}
 
 	defer db.Close()
