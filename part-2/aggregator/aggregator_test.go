@@ -10,6 +10,7 @@ import (
 )
 
 func createStore(t *testing.T) (*AggregationStore, func() error) {
+	t.Helper()
 	db, err := badger.Open(badger.DefaultOptions("./tmp"))
 	if err != nil {
 		log.Fatalf("could not open database: %v", err)
