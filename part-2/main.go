@@ -66,14 +66,15 @@ func aggregatorHandler(w http.ResponseWriter, r *http.Request) {
 	var n *aggregator.AggregationNotification
 
 	n, s := aggregator.Strategy(&sn, existingState)
-	if n != nil {
-		log.Printf("new event emitted for user %s\n", n.Email)
-		return
-	}
 
 	err = store.Save(sn.Email, s)
 	if err != nil {
 		log.Printf("failed save operation: %v\n", err)
+	}
+
+	if n != nil {
+		log.Printf("new event emitted for user %s\n", n.Email)
+		return
 	}
 
 	log.Println("event processed - no event emitted")
