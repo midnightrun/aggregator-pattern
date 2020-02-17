@@ -9,11 +9,15 @@ import (
 
 var defaultPrefix string = "aggregator_"
 
-type AggregateStore struct {
+type AggregationStore struct {
 	db *badger.DB
 }
 
-func (a *AggregateStore) ProcessNotification(n *SecurityNotification, p Processor) error {
+func NewStore(db *badger.DB) AggregationStore {
+	return AggregationStore{db: db}
+}
+
+func (a *AggregationStore) ProcessNotification(n *SecurityNotification, p Processor) error {
 	return a.db.Update(func(txn *badger.Txn) error {
 		correlationId := n.Email
 
