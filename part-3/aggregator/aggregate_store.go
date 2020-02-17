@@ -7,6 +7,8 @@ import (
 	"github.com/dgraph-io/badger"
 )
 
+var defaultPrefix string = "aggregator_"
+
 type AggregateStore struct {
 	db *badger.DB
 }
@@ -15,7 +17,7 @@ func (a *AggregateStore) ProcessNotification(n *SecurityNotification, p Processo
 	return a.db.Update(func(txn *badger.Txn) error {
 		correlationId := n.Email
 
-		previousState, err := getOrNil(correlationId)
+		previousState, err := getOrNil(txn, correlationId)
 		if err != nil {
 			return err
 		}
