@@ -58,7 +58,7 @@ func aggregatorHandler(w http.ResponseWriter, r *http.Request) {
 	correlationID := sn.Email
 	log.Printf("processing %s event for %s\n", sn.Priority, correlationID)
 
-	existingState, err := store.Get(sn.Email)
+	existingState, err := store.Get(correlationID)
 	if err != nil {
 		existingState = make(aggregator.Aggregation, 0)
 	}
