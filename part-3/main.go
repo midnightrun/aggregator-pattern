@@ -13,7 +13,7 @@ import (
 )
 
 var store aggregator.AggregationStore
-var processor aggregator.Processor
+var processor aggregator.PublishingProcessor
 
 func main() {
 	db, err := badger.Open(badger.DefaultOptions("./tmp"))
@@ -25,7 +25,7 @@ func main() {
 	defer db.Close()
 
 	store = aggregator.NewStore(db)
-	processor = processor{}
+	processor = aggregator.PublishingProcessor{}
 	http.HandleFunc("/notifications", aggregatorHandler)
 
 	errs := make(chan error, 2)

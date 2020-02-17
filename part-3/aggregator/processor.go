@@ -2,14 +2,12 @@ package aggregator
 
 import (
 	"fmt"
-
-	"github.com/midnightrun/aggregator-pattern/part-3/aggregator"
 )
 
 type PublishingProcessor struct{}
 
-func (pp *PublishingProcessor) Process(evt *SecurityNotification, existingState Aggregation) (Aggregation, error) {
-	notification, newState := aggregator.Strategy(evt, existingState)
+func (pp PublishingProcessor) Process(evt *SecurityNotification, existingState Aggregation) (Aggregation, error) {
+	notification, newState := Strategy(evt, existingState)
 	if notification == nil {
 		return newState, nil
 	}
