@@ -1,9 +1,14 @@
 package aggregator
 
-// Processor handles incoming notifications and previous state.
-//
-// Executed within the context of a transaction, takes incoming event and the
-// current aggregate state for that event into account, returns new state and an error if any.
-type Processor interface {
-	Process(*SecurityNotification, Aggregation) (Aggregation, error)
+func Strategy(evt *SecurityNotification, state Aggregation) (*AggregationNotification, Aggregation) {
+	state = append(state, evt)
+
+	if len(state) >= 3 || evt.Priority == HIGH {
+		return &AggregationNotification{
+			Email:         evt.Email,
+			Notifications: state,
+		}, state
+	}
+
+	return nil, state
 }

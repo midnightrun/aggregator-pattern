@@ -26,6 +26,7 @@ func main() {
 
 	store = aggregator.NewStore(db)
 	processor = aggregator.PublishingProcessor{}
+
 	http.HandleFunc("/notifications", aggregatorHandler)
 
 	errs := make(chan error, 2)
@@ -40,9 +41,13 @@ func main() {
 		signal.Notify(c, syscall.SIGINT)
 		errs <- fmt.Errorf("%s", <-c)
 	}()
+
+	fmt.Printf("terminated service on http://localhost:8080/notifications due to %s\n", <-errs)
 }
 
 func aggregatorHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("start handling request\n")
+
 	var sn aggregator.SecurityNotification
 
 	dec := json.NewDecoder(r.Body)

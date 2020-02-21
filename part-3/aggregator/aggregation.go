@@ -1,3 +1,3 @@
 package aggregator
 
-type Aggregation []SecurityNotification
+type Aggregation []*SecurityNotification

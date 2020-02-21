@@ -4,6 +4,14 @@ import (
 	"fmt"
 )
 
+// Processor handles incoming notifications and previous state.
+//
+// Executed within the context of a transaction, takes incoming event and the
+// current aggregate state for that event into account, returns new state and an error if any.
+type Processor interface {
+	Process(*SecurityNotification, Aggregation) (Aggregation, error)
+}
+
 type PublishingProcessor struct{}
 
 func (pp PublishingProcessor) Process(evt *SecurityNotification, existingState Aggregation) (Aggregation, error) {
@@ -13,18 +21,5 @@ func (pp PublishingProcessor) Process(evt *SecurityNotification, existingState A
 	}
 
 	fmt.Printf("publishing new event for %s priority %s", evt.Email, evt.Priority)
-	return newState, nil
-}
-
-type mockProcessor struct {
-	processedNotification *SecurityNotification
-	processedAggregation  Aggregation
-	returnAggregation     Aggregation
-	err                   error
-}
-
-func (p *mockProcessor) Process(n *SecurityNotification, a Aggregation) (Aggregator, error) {
-	p.processedNotification = n
-	p.processedAggregation = a
-	return p.returnAggregation, p.err
+	return nil, nil
 }

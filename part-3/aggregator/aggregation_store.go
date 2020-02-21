@@ -18,6 +18,8 @@ func NewStore(db *badger.DB) AggregationStore {
 }
 
 func (a *AggregationStore) ProcessNotification(n *SecurityNotification, p Processor) error {
+	fmt.Printf("get database entry for %s\n", n.Email)
+
 	return a.db.Update(func(txn *badger.Txn) error {
 		correlationId := n.Email
 
