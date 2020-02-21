@@ -16,7 +16,9 @@ var store aggregator.AggregationStore
 var processor aggregator.PublishingProcessor
 
 func main() {
-	db, err := badger.Open(badger.DefaultOptions("./tmp"))
+	options := badger.DefaultOptions("./tmp")
+	options.Logger = nil
+	db, err := badger.Open(options)
 	if err != nil {
 		fmt.Printf("terminated service due to %v", err)
 		return

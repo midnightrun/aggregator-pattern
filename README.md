@@ -6,4 +6,4 @@ Based on [Kevin McDermott's Tutorial](https://bigkevmcd.github.io/patterns/event
 
 - [ ] Base implementation on msgpack
 - [ ] Implement again interface instead of concrete Badger dependency
-- [ ] Deactivate Badgers verbose logging
+- [x] Deactivate Badgers verbose logging
