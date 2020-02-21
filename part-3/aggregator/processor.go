@@ -20,6 +20,12 @@ func (pp PublishingProcessor) Process(evt *SecurityNotification, existingState A
 		return newState, nil
 	}
 
-	fmt.Printf("publishing new event for %s priority %s", evt.Email, evt.Priority)
+	fmt.Printf("publishing new event for %s \n", evt.Email)
+	for _, v := range notification.Notifications {
+		fmt.Printf("Timestamp %s\n", v.Timestamp)
+		fmt.Printf("Priority %s\n", v.Priority)
+		fmt.Printf("Notification %s\n", v.Notification)
+		fmt.Println()
+	}
 	return nil, nil
 }
