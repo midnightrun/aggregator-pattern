@@ -3,6 +3,7 @@ package aggregator
 import (
 	"errors"
 	"testing"
+	"time"
 )
 
 func TestProcessNotificationWithNoPreviousState(t *testing.T) {
@@ -45,11 +46,30 @@ func TestProcessNotificationErrorOnPublish(t *testing.T) {
 
 // Todo Deep Equal test missing
 
-func TestProcessAggregationPublishing(t *testing.T) {
-	store, cleanup := createBadgerStore(t)
+func TestProcessAggregationAfterTreshold(t *testing.T) {
+	db, cleanup := createBadgerStore()
 	defer cleanup()
 
-	processor := &mockAggregationProcessor{}
+	store := NewStore(db)
 
+	aggregation := Aggregation{
+		&SecurityNotification{
+			Email:        "testEmail",
+			Notification: "testing",
+			Timestamp:    time.Now().H.UTC()},
+	}
+
+	err := store.Save(aggregation, "testEmail")
+	if err != nil {
+		t.Fatalf("saving aggregation to database failed due to %v\n", err)
+	}
+
+	processor := &mockAggregationProcessor{}
 	err := store.ProcessAggregation(processor)
+
+	loaded := store.Get("testEmail")
+
+	if loaded != nil {
+		t.Fatalf("expected nil but got %v", loaded)
+	}
 }
