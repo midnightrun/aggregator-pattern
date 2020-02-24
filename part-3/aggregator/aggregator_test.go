@@ -3,6 +3,7 @@ package aggregator
 import (
 	"errors"
 	"testing"
+	"time"
 )
 
 func TestProcessNotificationWithNoPreviousState(t *testing.T) {
@@ -16,7 +17,7 @@ func TestProcessNotificationWithNoPreviousState(t *testing.T) {
 	fatalIfError(t, err)
 
 	if processor.processedNotification == nil {
-		t.Fatalf("processor did not receive notification")
+		t.Fatalf("processor did not receive notification\n")
 	}
 }
 
@@ -33,10 +34,38 @@ func TestProcessNotificationErrorOnPublish(t *testing.T) {
 
 	err := store.ProcessNotification(notification, processor)
 	if err != publishingError {
-		t.Fatalf("expected publishing error but got %v", err)
+		t.Fatalf("expected publishing error but got %v\n", err)
 	}
 
 	loaded := store.Get(notification.id)
+
+	if loaded != nil {
+		t.Fatalf("expected nil but got %v\n", loaded)
+	}
+}
+
+func TestProcessAggregationAfterTreshold(t *testing.T) {
+	db, cleanup := createBadgerStore()
+	defer cleanup()
+
+	store := NewStore(db)
+
+	aggregation := Aggregation{
+		&SecurityNotification{
+			Email:        "testEmail",
+			Notification: "testing",
+			Timestamp:    time.Now().H.UTC()},
+	}
+
+	err := store.Save(aggregation, "testEmail")
+	if err != nil {
+		t.Fatalf("saving aggregation to database failed due to %v\n", err)
+	}
+
+	processor := &mockAggregationProcessor{}
+	err := store.ProcessAggregation(processor)
+
+	loaded := store.Get("testEmail")
 
 	if loaded != nil {
 		t.Fatalf("expected nil but got %v", loaded)
