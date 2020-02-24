@@ -53,10 +53,27 @@ func TestProcessAggregationAfterTreshold(t *testing.T) {
 	store := NewStore(db)
 
 	aggregation := Aggregation{
-		&SecurityNotification{
-			Email:        "testEmail",
-			Notification: "testing",
-			Timestamp:    time.Now().H.UTC()},
+		LastUpdate: time.Now().Add(-3 * time.Hour),
+		Notifications: []*SecurityNotification{
+			{
+				Timestamp:    time.Now().UTC(),
+				Priority:     0,
+				Email:        "testEmail",
+				Notification: "testMail",
+			},
+			{
+				Timestamp:    time.Now().UTC(),
+				Priority:     0,
+				Email:        "testEmail",
+				Notification: "testMail",
+			},
+			{
+				Timestamp:    time.Now().UTC(),
+				Priority:     0,
+				Email:        "testEmail",
+				Notification: "testMail",
+			},
+		},
 	}
 
 	err := store.Save(aggregation, "testEmail")
@@ -65,9 +82,13 @@ func TestProcessAggregationAfterTreshold(t *testing.T) {
 	}
 
 	processor := &mockAggregationProcessor{}
-	err := store.ProcessAggregation(processor)
+	err = store.ProcessAggregation(processor)
 
-	loaded := store.Get("testEmail")
+	loaded, err := store.Get("testEmail")
+
+	if err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
 
 	if loaded != nil {
 		t.Fatalf("expected nil but got %v", loaded)
