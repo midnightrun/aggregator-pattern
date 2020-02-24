@@ -42,3 +42,14 @@ func TestProcessNotificationErrorOnPublish(t *testing.T) {
 		t.Fatalf("expected nil but got %v", loaded)
 	}
 }
+
+// Todo Deep Equal test missing
+
+func TestProcessAggregationPublishing(t *testing.T) {
+	store, cleanup := createBadgerStore(t)
+	defer cleanup()
+
+	processor := &mockAggregationProcessor{}
+
+	err := store.ProcessAggregation(processor)
+}
