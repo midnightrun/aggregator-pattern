@@ -42,6 +42,17 @@ func (a *AggregationStore) ProcessNotification(n *SecurityNotification, p Proces
 	})
 }
 
+func (a *AggregationStore) Save(aggregation Aggregation, correlationId string) error {
+	return a.db.Update(func(txn *badger.Txn) error {
+		b, err := json.Marshal(aggregation)
+		if err != nil {
+			return err
+		}
+
+		return txn.Set(keyForId(defaultPrefix, correlationId), b)
+	})
+}
+
 func getOrNil(txn *badger.Txn, correlationId string) (Aggregation, error) {
 	item, err := txn.Get(keyForId(defaultPrefix, correlationId))
 	if err == badger.ErrKeyNotFound {
