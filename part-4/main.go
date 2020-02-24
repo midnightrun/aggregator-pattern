@@ -18,6 +18,7 @@ var processor aggregator.PublishingProcessor
 func main() {
 	options := badger.DefaultOptions("./tmp")
 	options.Logger = nil
+
 	db, err := badger.Open(options)
 	if err != nil {
 		fmt.Printf("terminated service due to %v", err)
