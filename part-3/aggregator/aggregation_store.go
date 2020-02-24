@@ -53,6 +53,18 @@ func (a *AggregationStore) Save(aggregation Aggregation, correlationId string) e
 	})
 }
 
+func (a *AggregationStore) Get(correlationId string) (Aggregation, error) {
+	var aggregation Aggregation
+
+	err := a.db.View(func(txn *badger.Txn) error {
+		var err error
+		aggregation, err = getOrNil(txn, correlationId)
+		return err
+	})
+
+	return aggregation, err
+}
+
 func getOrNil(txn *badger.Txn, correlationId string) (Aggregation, error) {
 	item, err := txn.Get(keyForId(defaultPrefix, correlationId))
 	if err == badger.ErrKeyNotFound {
