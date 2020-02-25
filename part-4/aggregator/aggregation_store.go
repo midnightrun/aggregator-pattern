@@ -28,7 +28,7 @@ func (a *AggregationStore) ProcessNotification(n *SecurityNotification, p Proces
 			return err
 		}
 
-		newState, err := p.Process(n, previousState)
+		newState, err := p.Process(n, *previousState)
 		if err != nil {
 			return err
 		}
@@ -41,6 +41,8 @@ func (a *AggregationStore) ProcessNotification(n *SecurityNotification, p Proces
 		return txn.Set(keyForId(defaultPrefix, correlationId), b)
 	})
 }
+
+func (a *AggregationStore) ProcessAggregation()
 
 func (a *AggregationStore) Save(aggregation Aggregation, correlationId string) error {
 	return a.db.Update(func(txn *badger.Txn) error {
