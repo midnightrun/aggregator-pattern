@@ -78,7 +78,8 @@ func TestProcessNotificationErrorOnPublish(t *testing.T) {
 		t.Fatalf("expected publishing error but got %v", err)
 	}
 
-	loaded := store.Get(notification.id)
+	loaded, err := store.Get(notification.Email)
+	fatalIfError(t, err)
 
 	if loaded != nil {
 		t.Fatalf("expected nil but got %v", loaded)
@@ -88,10 +89,8 @@ func TestProcessNotificationErrorOnPublish(t *testing.T) {
 // Todo Deep Equal test missing
 
 func TestProcessAggregationAfterTreshold(t *testing.T) {
-	db, cleanup := createBadgerStore()
+	store, cleanup := createBadgerStore(t)
 	defer cleanup()
-
-	store := NewStore(db)
 
 	aggregation := Aggregation{
 		LastUpdate: time.Now().Add(-3 * time.Hour),
@@ -127,9 +126,7 @@ func TestProcessAggregationAfterTreshold(t *testing.T) {
 
 	loaded, err := store.Get("testEmail")
 
-	if err != nil {
-		t.Fatalf("expected no error but got %v", err)
-	}
+	fatalIfError(t, err)
 
 	if loaded != nil {
 		t.Fatalf("expected nil but got %v", loaded)

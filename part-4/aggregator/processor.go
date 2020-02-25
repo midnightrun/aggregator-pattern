@@ -14,7 +14,7 @@ type Processor interface {
 
 type PublishingProcessor struct{}
 
-func (pp PublishingProcessor) Process(evt *SecurityNotification, existingState Aggregation) (Aggregation, error) {
+func (pp *PublishingProcessor) Process(evt *SecurityNotification, existingState Aggregation) (Aggregation, error) {
 	notification, newState := Strategy(evt, existingState)
 	if notification == nil {
 		return newState, nil
@@ -27,5 +27,5 @@ func (pp PublishingProcessor) Process(evt *SecurityNotification, existingState A
 		fmt.Printf("Notification %s\n", v.Notification)
 		fmt.Println()
 	}
-	return nil, nil
+	return Aggregation{}, nil
 }

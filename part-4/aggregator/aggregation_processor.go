@@ -1,5 +1,5 @@
 package aggregator
 
 type AggregationProcessor interface {
-	Process(Aggregation) error
+	Process(state Aggregation) (*Aggregation, error)
 }

@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// Strategy receive an Event process the behaviour of the system relating to the current Aggregation state.
 func Strategy(evt *SecurityNotification, state Aggregation) (*AggregationNotification, Aggregation) {
 	state.Notifications = append(state.Notifications, evt)
 
@@ -12,14 +13,14 @@ func Strategy(evt *SecurityNotification, state Aggregation) (*AggregationNotific
 		return &AggregationNotification{
 			Email:         evt.Email,
 			Notifications: state.Notifications,
-		}, state
+		}, Aggregation{}
 	}
 
 	return nil, state
 }
 
 func StrategyWithoutEvent(correlationId string, state Aggregation) (*AggregationNotification, Aggregation) {
-	if state.LastUpdate < time.Now().UTC() {
+	if time.Now().Add(-3 * time.Hour).UTC().Before(state.LastUpdate) {
 		return &AggregationNotification{
 
 			Email:         correlationId,

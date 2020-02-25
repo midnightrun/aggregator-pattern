@@ -28,6 +28,10 @@ func (a *AggregationStore) ProcessNotification(n *SecurityNotification, p Proces
 			return err
 		}
 
+		if previousState == nil {
+			previousState = &Aggregation{}
+		}
+
 		newState, err := p.Process(n, *previousState)
 		if err != nil {
 			return err
@@ -42,7 +46,9 @@ func (a *AggregationStore) ProcessNotification(n *SecurityNotification, p Proces
 	})
 }
 
-func (a *AggregationStore) ProcessAggregation()
+func (a *AggregationStore) ProcessAggregation(processor AggregationProcessor) error {
+	return nil
+}
 
 func (a *AggregationStore) Save(aggregation Aggregation, correlationId string) error {
 	return a.db.Update(func(txn *badger.Txn) error {
@@ -56,7 +62,7 @@ func (a *AggregationStore) Save(aggregation Aggregation, correlationId string) e
 }
 
 func (a *AggregationStore) Get(correlationId string) (*Aggregation, error) {
-	var aggregation Aggregation
+	var aggregation *Aggregation
 
 	err := a.db.View(func(txn *badger.Txn) error {
 		var err error
