@@ -7,9 +7,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	log.Println("Starting Aggegator Tests ...")
+	log.Println("Starting Aggregator Tests ...")
 	exitVal := m.Run()
-	log.Println("Shutting down Aggegator Tests")
+	log.Println("Shutting down Aggregator Tests")
 	dropAll()
 	os.Exit(exitVal)
 }
