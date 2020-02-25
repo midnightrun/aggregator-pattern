@@ -2,9 +2,50 @@ package aggregator
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
+
+	"github.com/dgraph-io/badger"
 )
+
+func createBadgerStore(t *testing.T) (*AggregationStore, func() error) {
+	t.Helper()
+	db, err := badger.Open(badger.DefaultOptions("./tmp"))
+	if err != nil {
+		t.Fatalf("could not open database: %v", err)
+		return nil, nil
+	}
+	store := NewStore(db)
+	return &store, db.Close
+}
+
+func dropAll() {
+	db, err := badger.OpenManaged(badger.DefaultOptions("./tmp"))
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer db.Close()
+
+	db.DropAll()
+}
+
+func makeNotification(correlationId string) *SecurityNotification {
+	return &SecurityNotification{
+		Email:        correlationId,
+		Priority:     0,
+		Timestamp:    time.Now().UTC(),
+		Notification: "test notification",
+	}
+}
+
+func fatalIfError(t *testing.T, err error) {
+	t.Helper()
+
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+}
 
 func TestProcessNotificationWithNoPreviousState(t *testing.T) {
 	store, cleanup := createBadgerStore(t)
