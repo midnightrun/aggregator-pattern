@@ -7,13 +7,14 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/dgraph-io/badger"
-	"github.com/midnightrun/aggregator-pattern/part-3/aggregator"
+	"github.com/midnightrun/aggregator-pattern/part-4/aggregator"
 )
 
 var store aggregator.AggregationStore
-var processor aggregator.PublishingProcessor
+var processor *aggregator.PublishingProcessor
 
 func main() {
 	options := badger.DefaultOptions("./tmp")
@@ -28,7 +29,7 @@ func main() {
 	defer db.Close()
 
 	store = aggregator.NewStore(db)
-	processor = aggregator.PublishingProcessor{}
+	processor = &aggregator.PublishingProcessor{}
 
 	http.HandleFunc("/notifications", aggregatorHandler)
 
@@ -45,7 +46,25 @@ func main() {
 		errs <- fmt.Errorf("%s", <-c)
 	}()
 
+	ticker := time.NewTicker(time.Second * 5)
+	done := make(chan bool)
+
+	go func() {
+		for {
+			select {
+			case <-done:
+				return
+			case <-ticker.C:
+				err := store.ProcessAggregations(processor)
+				if err != nil {
+					fmt.Println("Aggregation Processing: ", err)
+				}
+			}
+		}
+	}()
+
 	fmt.Printf("terminated service on http://localhost:8080/notifications due to %s\n", <-errs)
+	done <- true
 }
 
 func aggregatorHandler(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +80,7 @@ func aggregatorHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = store.ProcessNotification(&sn, processor)
+	err = store.ProcessNotification(sn, processor)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

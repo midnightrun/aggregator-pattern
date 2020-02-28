@@ -1,4 +1,3 @@
-package aggregator
 
 import (
 	"encoding/json"
@@ -17,22 +16,18 @@ func NewStore(db *badger.DB) AggregationStore {
 	return AggregationStore{db: db}
 }
 
-func (a *AggregationStore) ProcessNotification(n *SecurityNotification, p Processor) error {
+func (a *AggregationStore) ProcessNotification(n SecurityNotification, p Processor) error {
 	fmt.Printf("get database entry for %s\n", n.Email)
 
 	return a.db.Update(func(txn *badger.Txn) error {
 		correlationId := n.Email
 
-		previousState, err := getOrNil(txn, correlationId)
+		previousState, err := getOrEmpty(txn, correlationId)
 		if err != nil {
 			return err
 		}
-
-		if previousState == nil {
-			previousState = &Aggregation{}
-		}
-
-		newState, err := p.Process(n, *previousState)
+		
+		newState, err := p.Process(n, previousState)
 		if err != nil {
 			return err
 		}
@@ -42,12 +37,55 @@ func (a *AggregationStore) ProcessNotification(n *SecurityNotification, p Proces
 			return err
 		}
 
+		if len(newState.Notifications) == 0 {
+			return txn.Delete(keyForId(defaultPrefix, correlationId))
+		}
+
 		return txn.Set(keyForId(defaultPrefix, correlationId), b)
 	})
 }
 
-func (a *AggregationStore) ProcessAggregation(processor AggregationProcessor) error {
-	return nil
+func (a *AggregationStore) ProcessAggregations(processor AggregationProcessor) error {
+	err := a.db.Update(func(txn *badger.Txn) error {
+		it := txn.NewIterator(badger.DefaultIteratorOptions)
+		defer it.Close()
+		prefix := []byte(defaultPrefix)
+
+		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+			item := it.Item()
+
+			err := processAggregation(txn, item, item.Key(), processor)
+
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	return err
+}
+
+func processAggregation(txn *badger.Txn, item *badger.Item, key []byte, processor AggregationProcessor) error {
+	err := item.Value(func(v []byte) error {
+		state, err := unmarshal(v)
+		if err != nil {
+			return err
+		}
+
+		newState, err := processor.ProcessWithoutEvent(state)
+		if err != nil {
+			return err
+		}
+
+		if len(newState.Notifications) == 0 {
+			return txn.Delete(key)
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 func (a *AggregationStore) Save(aggregation Aggregation, correlationId string) error {
@@ -61,22 +99,24 @@ func (a *AggregationStore) Save(aggregation Aggregation, correlationId string) e
 	})
 }
 
-func (a *AggregationStore) Get(correlationId string) (*Aggregation, error) {
-	var aggregation *Aggregation
+func (a *AggregationStore) Get(correlationId string) (Aggregation, error) {
+	var aggregation Aggregation
 
 	err := a.db.View(func(txn *badger.Txn) error {
 		var err error
-		aggregation, err = getOrNil(txn, correlationId)
+		aggregation, err = getOrEmpty(txn, correlationId)
 		return err
 	})
 
 	return aggregation, err
 }
 
-func getOrNil(txn *badger.Txn, correlationId string) (*Aggregation, error) {
+func getOrEmpty(txn *badger.Txn, correlationId string) (Aggregation, error) {
 	item, err := txn.Get(keyForId(defaultPrefix, correlationId))
 	if err == badger.ErrKeyNotFound {
-		return nil, nil
+		return Aggregation{
+			Email: correlationId,
+		}, nil
 	}
 
 	var sns Aggregation
@@ -85,7 +125,7 @@ func getOrNil(txn *badger.Txn, correlationId string) (*Aggregation, error) {
 		return err
 	})
 
-	return &sns, err
+	return sns, err
 }
 
 func keyForId(prefix string, correlationId string) []byte {

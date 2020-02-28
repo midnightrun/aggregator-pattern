@@ -3,6 +3,7 @@ package aggregator
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -11,7 +12,11 @@ import (
 
 func createBadgerStore(t *testing.T) (*AggregationStore, func() error) {
 	t.Helper()
-	db, err := badger.Open(badger.DefaultOptions("./tmp"))
+
+	options := badger.DefaultOptions("./tmp")
+	options.Logger = nil
+
+	db, err := badger.Open(options)
 	if err != nil {
 		t.Fatalf("could not open database: %v", err)
 		return nil, nil
@@ -21,7 +26,10 @@ func createBadgerStore(t *testing.T) (*AggregationStore, func() error) {
 }
 
 func dropAll() {
-	db, err := badger.OpenManaged(badger.DefaultOptions("./tmp"))
+	options := badger.DefaultOptions("./tmp")
+	options.Logger = nil
+
+	db, err := badger.OpenManaged(options)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -30,8 +38,8 @@ func dropAll() {
 	db.DropAll()
 }
 
-func makeNotification(correlationId string) *SecurityNotification {
-	return &SecurityNotification{
+func makeNotification(correlationId string) SecurityNotification {
+	return SecurityNotification{
 		Email:        correlationId,
 		Priority:     0,
 		Timestamp:    time.Now().UTC(),
@@ -57,8 +65,8 @@ func TestProcessNotificationWithNoPreviousState(t *testing.T) {
 	err := store.ProcessNotification(notification, processor)
 	fatalIfError(t, err)
 
-	if processor.processedNotification == nil {
-		t.Fatalf("processor did not receive notification")
+	if !reflect.DeepEqual(notification, processor.processedNotification) {
+		t.Fatalf("processor did not receive correct notification")
 	}
 }
 
@@ -81,7 +89,55 @@ func TestProcessNotificationErrorOnPublish(t *testing.T) {
 	loaded, err := store.Get(notification.Email)
 	fatalIfError(t, err)
 
-	if loaded != nil {
+	if len(loaded.Notifications) > 0 {
+		t.Fatalf("expected nil but got %v", loaded)
+	}
+}
+
+func TestProcessNotificationOnPublish(t *testing.T) {
+	store, cleanup := createBadgerStore(t)
+	defer cleanup()
+
+	email := "testEmail"
+	state := Aggregation{
+		Email:      email,
+		LastUpdate: time.Now().UTC(),
+		Notifications: []SecurityNotification{
+			{
+				Email:        email,
+				Notification: "test mail",
+			},
+			{
+				Email:        email,
+				Notification: "test mail",
+			},
+		},
+	}
+
+	err := store.Save(state, email)
+	if err != nil {
+		t.Fatal("error while saving state to store")
+	}
+
+	processor := &mockProcessor{}
+	processor.returnAggregation = Aggregation{}
+
+	notification := SecurityNotification{
+		Email:        email,
+		Notification: "notification",
+	}
+
+	err = store.ProcessNotification(notification, processor)
+	if err != nil {
+		t.Fatalf("error while processing notification")
+	}
+
+	loaded, err := store.Get(email)
+	if err != nil {
+		t.Fatalf("error while getting aggregation")
+	}
+
+	if len(loaded.Notifications) > 0 {
 		t.Fatalf("expected nil but got %v", loaded)
 	}
 }
@@ -92,43 +148,47 @@ func TestProcessAggregationAfterTreshold(t *testing.T) {
 	store, cleanup := createBadgerStore(t)
 	defer cleanup()
 
+	email := "testEmail"
+
 	aggregation := Aggregation{
+		Email:      email,
 		LastUpdate: time.Now().Add(-3 * time.Hour),
-		Notifications: []*SecurityNotification{
+		Notifications: []SecurityNotification{
 			{
 				Timestamp:    time.Now().UTC(),
 				Priority:     0,
-				Email:        "testEmail",
+				Email:        email,
 				Notification: "testMail",
 			},
 			{
 				Timestamp:    time.Now().UTC(),
 				Priority:     0,
-				Email:        "testEmail",
+				Email:        email,
 				Notification: "testMail",
 			},
 			{
 				Timestamp:    time.Now().UTC(),
 				Priority:     0,
-				Email:        "testEmail",
+				Email:        email,
 				Notification: "testMail",
 			},
 		},
 	}
 
-	err := store.Save(aggregation, "testEmail")
+	err := store.Save(aggregation, email)
 	if err != nil {
 		t.Fatalf("saving aggregation to database failed due to %v\n", err)
 	}
 
-	processor := &mockAggregationProcessor{}
-	err = store.ProcessAggregation(processor)
+	// Todo: Add config for setting the time
+	processor := &mockProcessor{}
+	err = store.ProcessAggregations(processor)
 
-	loaded, err := store.Get("testEmail")
+	loaded, err := store.Get(email)
 
 	fatalIfError(t, err)
 
-	if loaded != nil {
-		t.Fatalf("expected nil but got %v", loaded)
+	if len(loaded.Notifications) > 0 {
+		t.Fatalf("expected no notifications but got %v", loaded)
 	}
 }
